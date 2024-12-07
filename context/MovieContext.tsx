@@ -1,24 +1,8 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 import axios from 'axios';
-
-interface Movie {
-    title: string;
-    year: string;
-    poster: string;
-    imdbID: string;
-}
-
-interface MovieContextType {
-    movies: Movie[] | null;
-    setMovies: React.Dispatch<React.SetStateAction<Movie[] | null>>;
-    fetchMoviesBySearch: (search: string, page: number) => Promise<void>;
-    fetchRandomMovies: (page: number) => Promise<void>;
-    loading: boolean;
-}
-
-interface MovieProviderProps {
-    children: ReactNode;
-}
+import { Movie } from '@/Types/movieTypes';
+import { MovieContextType } from '@/Types/MovieContextType';
+import { MovieProviderProps } from '@/Types/MovieProviderProps';
 
 const MovieContext = createContext<MovieContextType | undefined>(undefined);
 
@@ -30,81 +14,92 @@ export const useMovieContext = (): MovieContextType => {
     return context;
 };
 
+const API_KEY = 'c9f37d53';
+const BASE_URL = `http://www.omdbapi.com/?apikey=${API_KEY}`;
+
+const fetchMoviesFromApi = async (url: string) => {
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+};
+
 export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
     const [movies, setMovies] = useState<Movie[] | null>(null);
     const [loading, setLoading] = useState(false);
+    const [innerMovie, setInnerMovie] = useState<Movie | null>(null);
 
-    const API_KEY = 'c9f37d53';
-    const BASE_URL = `http://www.omdbapi.com/?apikey=${API_KEY}`;
+    const handleMovieData = (movieData: any, page: number) => {
+        if (movieData.Response === 'True') {
+            setInnerMovie(null);
+            const newMovies = movieData.Search.map((movie: any) => ({
+                Title: movie.Title,
+                Year: movie.Year,
+                Poster: movie.Poster,
+                imdbID: movie.imdbID,
+                Type: movie.Type,
+            }));
+            setMovies(page === 1 ? newMovies : [...(movies || []), ...newMovies]);
+        } else {
+            console.warn(movieData.Error || 'No movies found.');
+        }
+    };
 
     const fetchMoviesBySearch = async (search: string, page: number) => {
         setLoading(true);
+        const url = `${BASE_URL}&s=${search}&page=${page}`;
         try {
-            const response = await axios.get(`${BASE_URL}&s=${search}&page=${page}`);
-            const movieData = response.data;
-
-            if (movieData.Response === 'True') {
-                setMovies((prevMovies) => {
-                    const newMovies = movieData.Search.map((movie: any) => ({
-                        title: movie.Title,
-                        year: movie.Year,
-                        poster: movie.Poster,
-                        imdbID: movie.imdbID,
-                    }));
-                    return page === 1 ? newMovies : [...(prevMovies || []), ...newMovies];
-                });
-            } else {
-                setMovies(null);
-            }
-        } catch (error) {
-            console.error('Error fetching movies:', error);
+            const movieData = await fetchMoviesFromApi(url);
+            handleMovieData(movieData, page);
         } finally {
             setLoading(false);
         }
     };
-
 
     const fetchRandomMovies = async (page: number) => {
         setLoading(true);
+        const randomSearchTerms = ['love', 'man', 'matrix', 'fun', 'star', 'moon', 'avengers'];
+        const randomTerm = randomSearchTerms[Math.floor(Math.random() * randomSearchTerms.length)];
+        const url = `${BASE_URL}&s=${randomTerm}&page=${page}`;
+
         try {
-            const randomSearchTerms = ['love', 'man', 'matrix', 'fun', 'star', 'moon', 'avengers'];
-            const randomTerm = randomSearchTerms[Math.floor(Math.random() * randomSearchTerms.length)];
-
-            const response = await axios.get(`${BASE_URL}&s=${randomTerm}&page=${page}`);
-            const movieData = response.data;
-
-            if (movieData.Response === 'True') {
-                setMovies((prevMovies) => {
-                    const newMovies = movieData.Search.map((movie: any) => ({
-                        title: movie.Title,
-                        year: movie.Year,
-                        poster: movie.Poster,
-                        imdbID: movie.imdbID,
-                    }));
-                    return page === 1 ? newMovies : [...(prevMovies || []), ...newMovies];
-                });
-            } else if (movieData.Error === "Too many results.") {
-                console.warn("Too many results. Retrying with a different term...");
-                await fetchRandomMovies(page);
-            } else {
-                console.warn(movieData.Error || "No movies found.");
-                setMovies(null);
-            }
+            const movieData = await fetchMoviesFromApi(url);
+            handleMovieData(movieData, page);
         } catch (error) {
-            console.error('Error fetching random movies:', error);
+            console.warn('Retrying with a different term...');
+            fetchRandomMovies(page); // Retry with another term
         } finally {
             setLoading(false);
         }
     };
 
+    const fetchMoviesByImdbID = async (imdbID: string) => {
+        setLoading(true);
+        const url = `${BASE_URL}&i=${imdbID}`;
+        try {
+            const movieData = await fetchMoviesFromApi(url);
+            if (movieData.Response === 'True') {
+                setInnerMovie({ ...movieData });
+            } else {
+                setMovies(null);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <MovieContext.Provider
             value={{
                 movies,
+                innerMovie,
                 setMovies,
                 fetchMoviesBySearch,
                 fetchRandomMovies,
+                fetchMoviesByImdbID,
                 loading,
             }}>
             {children}

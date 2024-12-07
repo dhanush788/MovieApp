@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Image, StyleSheet, Text, View, ActivityIndicator, TextInput, Button, TouchableOpacity, FlatList, Animated, Easing } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
+import { Image, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, FlatList, Animated, Easing } from 'react-native';
 import { useMovieContext } from '@/context/MovieContext';
-import { useNavigation } from '@react-navigation/native';
-
-interface Movie {
-  title: string;
-  year: string;
-  poster: string;
-  imdbID: string;
-}
+import { Link } from 'expo-router';
+import { Movie } from '@/Types/movieTypes';
+import { buildSearchQuery } from '@/utils/helpers';
+import FilterSection from '@/components/FilterSection';
 
 export default function HomeScreen() {
-  const { movies, loading, setMovies, fetchMoviesBySearch, fetchRandomMovies } = useMovieContext();
+  const { movies, loading, setMovies, fetchMoviesBySearch, fetchRandomMovies, fetchMoviesByImdbID } = useMovieContext();
   const [query, setQuery] = useState('');
   const [type, setType] = useState('movie');
   const [year, setYear] = useState('');
@@ -23,19 +18,22 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [genre, setGenre] = useState('');
   const [filtersHeight] = useState(new Animated.Value(0));
-  const navigation = useNavigation();
 
-  const genres = [
-    { label: 'Action', value: 'Action' },
-    { label: 'Comedy', value: 'Comedy' },
-    { label: 'Drama', value: 'Drama' },
-    { label: 'Romance', value: 'Romance' },
-    { label: 'Horror', value: 'Horror' },
-    { label: 'Sci-Fi', value: 'Sci-Fi' },
-    { label: 'Thriller', value: 'Thriller' },
-    { label: 'Adventure', value: 'Adventure' },
-  ];
+  useEffect(() => {
+    if (!movies && !query) {
+      fetchRandomMovies(1);
+    }
+  }, []);
 
+  useEffect(() => {
+    if (loadingMore) {
+      setTimeout(() => {
+        setLoadingMore(false);
+      }, 5000);
+    }
+  }, [loadingMore]);
+
+  // This function toggles the filters section
   const toggleFilters = () => {
     Animated.timing(filtersHeight, {
       toValue: showFilters ? 0 : 300,
@@ -45,15 +43,15 @@ export default function HomeScreen() {
     }).start();
     setShowFilters(!showFilters);
   };
-
+  
+  // This function handles the search for movies
   const handleSearch = () => {
-    movies && movies.length > 0 && setMovies(null);
+    if (movies && movies.length > 0) {
+      setMovies(null);
+    }
     setPage(1);
-    let searchQuery = query;
 
-    if (type) searchQuery += `&type=${type}`;
-    if (year) searchQuery += `&y=${year}`;
-    if (genre) searchQuery += `&genre=${genre}`;
+    const searchQuery = buildSearchQuery(query, type, year, genre);
 
     if (!searchQuery) {
       fetchRandomMovies(1);
@@ -62,26 +60,15 @@ export default function HomeScreen() {
     }
   };
 
-
-  useEffect(() => {
-    if (!movies && !query) {
-      fetchRandomMovies(1);
-    }
-  }, []);
-
+  // This function loads more movies helping in infinite scrolling
   const handleLoadMore = () => {
     if (loadingMore) return;
     setLoadingMore(true);
     const nextPage = page + 1;
-
-    if (!query) {
+    const searchQuery = buildSearchQuery(query, type, year, genre);
+    if (!searchQuery) {
       fetchRandomMovies(nextPage).finally(() => setLoadingMore(false));
     } else {
-      let searchQuery = query;
-
-      if (type) searchQuery += `&type=${type}`;
-      if (year) searchQuery += `&y=${year}`;
-      if (genre) searchQuery += `&genre=${genre}`;
       fetchMoviesBySearch(searchQuery, nextPage).finally(() => setLoadingMore(false));
     }
 
@@ -89,65 +76,42 @@ export default function HomeScreen() {
   };
 
   const renderItem = ({ item }: { item: Movie }) => (
-
-    <TouchableOpacity key={item.imdbID} style={styles.imageContainer}
-    // onPress={() => navigation.navigate('MovieDetails', { imdbID: item.imdbID })}
+    <Link
+      key={item.imdbID}
+      style={styles.imageContainer}
+      href={`/movie/${item.imdbID}`}
     >
-      <Image source={{ uri: item.poster }} style={styles.moviePoster} />
-      <Text style={styles.movieTitle}>{item.title}</Text>
-    </TouchableOpacity>
+      <Image source={{ uri: item.Poster }} style={styles.moviePoster} />
+      <Text style={styles.movieTitle}>{item.Title}</Text>
+    </Link>
   );
-
-
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.toggleButton} onPress={toggleFilters}>
-        <Text style={styles.toggleButtonText}>{showFilters ? 'Hide Filters' : 'Show Filters'}</Text>
+        <Text style={styles.toggleButtonText}>{showFilters ? 'Hide Filters' : 'Apply Filters'}</Text>
       </TouchableOpacity>
 
       <Animated.View style={{ height: filtersHeight, overflow: 'hidden' }}>
         {showFilters && (
-          <View style={styles.filterContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Search for a movie..."
-              value={query}
-              onChangeText={setQuery}
-            />
-            <DropDownPicker
-              style={styles.input}
-              open={open}
-              items={[
-                { label: 'Movie', value: 'movie' },
-                { label: 'Series', value: 'series' },
-                { label: 'Episode', value: 'episode' },
-              ]}
-              value={type}
-              setValue={setType}
-              setOpen={setOpen}
-            />
-            <DropDownPicker
-              style={styles.input}
-              open={open2}
-              items={genres}
-              value={genre}
-              setValue={setGenre}
-              setOpen={setOpen2}
-              placeholder="Select Genre"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Year (optional)"
-              keyboardType="numeric"
-              value={year}
-              onChangeText={setYear}
-            />
-            <Button title="Search" color={"#101010"} onPress={handleSearch} />
-          </View>
+          <FilterSection
+            query={query}
+            setQuery={setQuery}
+            type={type}
+            setType={setType}
+            genre={genre}
+            setGenre={setGenre}
+            year={year}
+            setYear={setYear}
+            handleSearch={handleSearch}
+            open={open}
+            setOpen={setOpen}
+            open2={open2}
+            setOpen2={setOpen2}
+          />
         )}
       </Animated.View>
-      {movies ?
+      {movies ? (
         <FlatList
           data={movies}
           renderItem={renderItem}
@@ -164,18 +128,16 @@ export default function HomeScreen() {
             ) : null
           }
         />
-        :
-        loading ?
-
-          <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#0000ff" />
-            <Text style={styles.loadingText}>Loading Movie...</Text>
-          </View>
-          :
-          <View style={styles.loaderContainer}>
-            <Text style={styles.loadingText}>No movies found.</Text>
-          </View>
-      }
+      ) : loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={styles.loadingText}>Loading Movie...</Text>
+        </View>
+      ) : (
+        <View style={styles.loaderContainer}>
+          <Text style={styles.loadingText}>No movies found.</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -223,7 +185,7 @@ const styles = StyleSheet.create({
   gridContainer: {
     width: '100%',
     padding: 10,
-    gap: 20
+    gap: 20,
   },
   imageContainer: {
     width: '46%',
