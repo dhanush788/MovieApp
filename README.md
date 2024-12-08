@@ -1,3 +1,30 @@
+# How to run the App
+Detailed description of clonning and start running the app is given Below. Please refer to it.
+
+There is also an app apk in this repo download it for just use.
+
+# Features
+
+It consist of 2 pages.
+Movie listing page - Displays a list of all available movies.
+Movie inner page - Provides a detailed view of a selected movie, showcasing in-depth information in an easily readable manner.
+
+Sorting and filtering - Movies can be sorted and filtered based on genre name type and year.
+
+Interesting UI - The main page shows a concise summary of each movie where as the detailed page provides a thorough and user-friendly breakdown of movie information.
+
+Implemented infinite scrolling to efficiently load and display a large set of movie data.
+
+# Technology
+React Native: Framework used for building the app.
+OMDb API: Movie data is fetched using the OMDb API.
+React Context API: Used for managing and sharing data across the app.
+
+
+
+
+
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
