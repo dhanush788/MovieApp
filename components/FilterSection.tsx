@@ -3,8 +3,6 @@ import React from 'react';
 import { TextInput, Button, View, StyleSheet } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 
-
-
 const FilterSection: React.FC<FilterSectionProps> = ({
   query,
   setQuery,
@@ -18,7 +16,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   open,
   setOpen,
   open2,
-  setOpen2
+  setOpen2,
 }) => {
   return (
     <View style={styles.filterContainer}>
@@ -28,36 +26,46 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         value={query}
         onChangeText={setQuery}
       />
-      <DropDownPicker
-        style={styles.input}
-        open={open}
-        items={[
-          { label: 'Movie', value: 'movie' },
-          { label: 'Series', value: 'series' },
-          { label: 'Episode', value: 'episode' },
-        ]}
-        value={type}
-        setValue={setType}
-        setOpen={setOpen}
-      />
-      <DropDownPicker
-        style={styles.input}
-        open={open2}
-        items={[
-          { label: 'Action', value: 'Action' },
-          { label: 'Comedy', value: 'Comedy' },
-          { label: 'Drama', value: 'Drama' },
-          { label: 'Romance', value: 'Romance' },
-          { label: 'Horror', value: 'Horror' },
-          { label: 'Sci-Fi', value: 'Sci-Fi' },
-          { label: 'Thriller', value: 'Thriller' },
-          { label: 'Adventure', value: 'Adventure' },
-        ]}
-        value={genre}
-        setValue={setGenre}
-        setOpen={setOpen2}
-        placeholder="Select Genre"
-      />
+      <View style={[styles.dropdownContainer, { zIndex: 1000 }]}>
+        <DropDownPicker
+          style={styles.input}
+          open={open}
+          items={[
+            { label: 'Movie', value: 'movie' },
+            { label: 'Series', value: 'series' },
+            { label: 'Episode', value: 'episode' },
+          ]}
+          value={type}
+          setValue={setType}
+          setOpen={setOpen}
+          containerStyle={styles.dropdownContainerStyle}
+        />
+      </View>
+      <View style={[styles.dropdownContainer, { zIndex: 999 }]}>
+        <DropDownPicker
+          style={styles.input}
+          open={open2}
+          items={[
+            { label: 'Action', value: 'Action' },
+            { label: 'Comedy', value: 'Comedy' },
+            { label: 'Drama', value: 'Drama' },
+            { label: 'Romance', value: 'Romance' },
+            { label: 'Horror', value: 'Horror' },
+            { label: 'Sci-Fi', value: 'Sci-Fi' },
+            { label: 'Thriller', value: 'Thriller' },
+            { label: 'Adventure', value: 'Adventure' },
+          ]}
+          value={genre}
+          setValue={setGenre}
+          setOpen={setOpen2}
+          placeholder="Select Genre"
+          containerStyle={styles.dropdownContainerStyle}
+          dropDownContainerStyle={{
+            maxHeight: 120,
+          }}
+          listMode="SCROLLVIEW"
+        />
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Year (optional)"
@@ -65,7 +73,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         value={year}
         onChangeText={setYear}
       />
-      <Button title="Search" color={"#101010"} onPress={handleSearch} />
+      <Button title="Search" color={'#101010'} onPress={handleSearch} />
     </View>
   );
 };
@@ -84,6 +92,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
     fontSize: 16,
+  },
+  dropdownContainer: {
+    position: 'relative',
+  },
+  dropdownContainerStyle: {
+    marginBottom: 5,
   },
 });
 

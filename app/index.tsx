@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Image, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, FlatList, Animated, Easing } from 'react-native';
 import { useMovieContext } from '@/context/MovieContext';
 import { Link } from 'expo-router';
@@ -18,6 +18,8 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [genre, setGenre] = useState('');
   const [filtersHeight] = useState(new Animated.Value(0));
+  const [showScrollButton, setShowScrollButton] = useState(false); 
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     if (!movies && !query) {
@@ -36,14 +38,14 @@ export default function HomeScreen() {
   // This function toggles the filters section
   const toggleFilters = () => {
     Animated.timing(filtersHeight, {
-      toValue: showFilters ? 0 : 300,
+      toValue: showFilters ? 0 : 320,
       duration: 300,
       easing: Easing.ease,
       useNativeDriver: false,
     }).start();
     setShowFilters(!showFilters);
   };
-  
+
   // This function handles the search for movies
   const handleSearch = () => {
     if (movies && movies.length > 0) {
@@ -65,7 +67,10 @@ export default function HomeScreen() {
     if (loadingMore) return;
     setLoadingMore(true);
     const nextPage = page + 1;
-    const searchQuery = buildSearchQuery(query, type, year, genre);
+    let searchQuery = query;
+    if (query) {
+      searchQuery = buildSearchQuery(query, type, year, genre);
+    }
     if (!searchQuery) {
       fetchRandomMovies(nextPage).finally(() => setLoadingMore(false));
     } else {
@@ -73,6 +78,16 @@ export default function HomeScreen() {
     }
 
     setPage(nextPage);
+  };
+
+  // Handle scroll position to show/hide the scroll-to-top button
+  const handleScroll = (event: any) => {
+    const contentOffsetY = event.nativeEvent.contentOffset.y;
+    if (contentOffsetY > 200) {
+      setShowScrollButton(true); // show button when scrolled down 200px
+    } else {
+      setShowScrollButton(false); // hide button when near top
+    }
   };
 
   const renderItem = ({ item }: { item: Movie }) => (
@@ -86,12 +101,19 @@ export default function HomeScreen() {
     </Link>
   );
 
+  // Scroll to top when the button is clicked
+  const scrollToTop = () => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
   return (
     <View style={styles.container}>
+      {/* filter toggle button */}
       <TouchableOpacity style={styles.toggleButton} onPress={toggleFilters}>
         <Text style={styles.toggleButtonText}>{showFilters ? 'Hide Filters' : 'Apply Filters'}</Text>
       </TouchableOpacity>
 
+      {/* filters section */}
       <Animated.View style={{ height: filtersHeight, overflow: 'hidden' }}>
         {showFilters && (
           <FilterSection
@@ -111,8 +133,11 @@ export default function HomeScreen() {
           />
         )}
       </Animated.View>
+
+      {/* movie grid */}
       {movies ? (
         <FlatList
+          ref={flatListRef}
           data={movies}
           renderItem={renderItem}
           keyExtractor={(item) => item.imdbID}
@@ -120,6 +145,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.gridContainer}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.1}
+          onScroll={handleScroll}
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.loaderContainer}>
@@ -137,6 +163,13 @@ export default function HomeScreen() {
         <View style={styles.loaderContainer}>
           <Text style={styles.loadingText}>No movies found.</Text>
         </View>
+      )}
+
+      {/* Scroll to top button */}
+      {showScrollButton && (
+        <TouchableOpacity style={styles.scrollButton} onPress={scrollToTop}>
+          <Text style={styles.scrollButtonText}>↑</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -205,5 +238,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     color: '#333',
+  },
+  scrollButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#000',
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollButtonText: {
+    color: '#fff',
+    fontSize: 24,
   },
 });

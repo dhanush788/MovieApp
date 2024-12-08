@@ -14,6 +14,7 @@ export default function HomeScreen() {
   const { id } = route.params as { id: string };
   const { innerMovie, fetchMoviesByImdbID } = useMovieContext();
 
+  // fetch movie by imdbID from context
   useEffect(() => {
     if (id) {
       fetchMoviesByImdbID(id);
@@ -22,6 +23,7 @@ export default function HomeScreen() {
 
   if (!innerMovie || innerMovie.imdbID !== id) {
     return (
+      // loading movie
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
         <Text style={styles.loadingText}>Loading Movie...</Text>
@@ -32,14 +34,16 @@ export default function HomeScreen() {
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      // movie poster image
       headerImage={
         <Image source={{ uri: innerMovie.Poster }} style={styles.reactLogo} />
       }>
+        {/* movie title display */}
       <ThemedView style={styles.headerContainer}>
         <ThemedText type="title" style={styles.titleText}>{innerMovie.Title}</ThemedText>
         <Text style={styles.yearText}>{innerMovie.Year} | {innerMovie.Genre} | {innerMovie.Runtime}</Text>
       </ThemedView>
-
+      {/* movie details */}
       <View style={styles.detailsContainer}>
         <MovieDetailSection title="Plot" content={innerMovie.Plot} />
         <MovieDetailSection title="Director" content={innerMovie.Director} />
