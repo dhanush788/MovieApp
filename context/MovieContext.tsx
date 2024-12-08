@@ -15,7 +15,7 @@ export const useMovieContext = (): MovieContextType => {
 };
 
 const API_KEY = 'c9f37d53';
-const BASE_URL = `http://www.omdbapi.com/?apikey=${API_KEY}`;
+const BASE_URL = `https://www.omdbapi.com/?apikey=${API_KEY}`;
 
 const fetchMoviesFromApi = async (url: string) => {
     try {
