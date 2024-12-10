@@ -1,7 +1,6 @@
 # How to run the App
-Detailed description of clonning and start running the app is given Below. Please refer to it.
-
-There is also an app apk in this repo download it for just use.
+A detailed description of cloning and starting the app is provided below. Please refer to it.
+An APK of the app is also available in this repository, you can download it for use or use the link https://expo.dev/accounts/dhanushpk/projects/bmc-task/builds/1ef56c14-8843-44fa-8bc6-3074c6411aff
 
 # Features
 
